@@ -14,14 +14,31 @@ android {
         applicationId = "test.hook.debug"
         minSdk = 26
         targetSdk = 33
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = 2
+        versionName = "2.0"
+    }
+
+    signingConfigs {
+        create("release") {
+            // The module signature is irrelevant to LSPosed, so by default we sign the
+            // release with the standard Android debug keystore (so the APK is installable).
+            // Override in ~/.gradle/gradle.properties with:
+            //   RELEASE_STORE_FILE, RELEASE_STORE_PASSWORD, RELEASE_KEY_ALIAS, RELEASE_KEY_PASSWORD
+            val home = System.getProperty("user.home")
+            storeFile = file((findProperty("RELEASE_STORE_FILE") as String?) ?: "$home/.android/debug.keystore")
+            storePassword = (findProperty("RELEASE_STORE_PASSWORD") as String?) ?: "android"
+            keyAlias = (findProperty("RELEASE_KEY_ALIAS") as String?) ?: "androiddebugkey"
+            keyPassword = (findProperty("RELEASE_KEY_PASSWORD") as String?) ?: "android"
+        }
     }
 
     buildTypes {
         named("release") {
-            isMinifyEnabled = true
+            // Keep minify off: this is a small Xposed module and R8 can break the hooks
+            // (reflective class/method lookups). Re-enable only with proper keep rules.
+            isMinifyEnabled = false
             proguardFiles("proguard-rules.pro")
+            signingConfig = signingConfigs.getByName("release")
         }
         named("debug") {
             versionNameSuffix = "-debug-" + DateTimeFormatter.ofPattern("yyyyMMddHHmmss").format(LocalDateTime.now())
