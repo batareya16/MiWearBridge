@@ -1,0 +1,39 @@
+# Built files
+*.apk
+*.aab
+*.ap_
+*.dex
+*.class
+
+# Gradle / build
+.gradle/
+build/
+/build
+/app/build/
+/captures
+.externalNativeBuild
+.cxx
+
+# Android Studio / IntelliJ
+*.iml
+.idea/
+*.hprof
+
+# Local config & SDK
+local.properties
+/local.properties
+
+# Signing — NEVER commit keys
+*.jks
+*.keystore
+keystore.properties
+sign/
+*.pem
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Decompiler output / large artifacts (not source)
+*_Decompiler.com/
+*.apk_Decompiler.com/
