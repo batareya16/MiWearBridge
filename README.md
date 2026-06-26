@@ -54,8 +54,6 @@ Coordinator routing:
 - Watch quick‑app(s) and the phone app **must share the same signing key** (interconnect requirement; the fingerprint used in checks comes from the coordinator app).
 - For background auto‑sync: set Mi Fitness to **no battery restriction**.
 
-Tested: **Mi Band 8 Pro**. Upstream Wearable‑Debug targets Mi Fitness `3.43.0i` / Mi Sport Health `3.44.0`.
-
 ## Build
 
 ```bash
