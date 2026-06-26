@@ -155,7 +155,6 @@ public class BypassBond {
         // after addListener, announce "app online" to the band for each package.
         try {
             final Class<?> dmeCls = mcl.loadClass("com.xiaomi.xms.wearable.extensions.DeviceModelExtKt");
-            final Class<?> ecqCls = mcl.loadClass("ecq");
             final Class<?> extCls = mcl.loadClass("com.xiaomi.xms.wearable.extensions.ExtensionsKt");
 
             XposedBridge.hookAllMethods(bc, "w2", new XC_MethodHook() {
@@ -184,32 +183,15 @@ public class BypassBond {
                         Object model = XposedHelpers.callMethod(p.thisObject, "w2");
                         if (model == null) model = connectedModel(mcl);
                         if (model == null) return;
-                        // fallback: announce the calling app itself, by its own package/signature
+                        // fallback: announce the calling app itself (watch package == phone package)
                         try {
                             String self = (String) XposedHelpers.callStaticMethod(extCls, "getCallingPackage");
-                            if (self != null && !self.isEmpty()) {
-                                byte[] fp;
-                                try { fp = (byte[]) XposedHelpers.callStaticMethod(extCls, "getFingerPrintByPackage", self); }
-                                catch (Throwable t) { fp = new byte[0]; }
-                                Object ecq = ecqCls.newInstance();
-                                XposedHelpers.setObjectField(ecq, "a", self);
-                                XposedHelpers.setObjectField(ecq, "b", fp);
-                                XposedHelpers.callStaticMethod(dmeCls, "syncPhoneAppStatus", model, ecq, Boolean.TRUE);
-                            }
+                            if (self != null && !self.isEmpty()) announceOnline(dmeCls, extCls, model, self, self);
                         } catch (Throwable ignore) {
                         }
+                        // explicit coordinator bindings: announce each watch package (with its coordinator's fp)
                         for (java.util.Map.Entry<String, String> e : BoundApps.bindings(null).entrySet()) {
-                            try {
-                                String watch = e.getKey(), coord = e.getValue();
-                                byte[] fp;
-                                try { fp = (byte[]) XposedHelpers.callStaticMethod(extCls, "getFingerPrintByPackage", coord); }
-                                catch (Throwable t) { fp = new byte[0]; }
-                                Object ecq = ecqCls.newInstance();
-                                XposedHelpers.setObjectField(ecq, "a", watch);
-                                XposedHelpers.setObjectField(ecq, "b", fp);
-                                XposedHelpers.callStaticMethod(dmeCls, "syncPhoneAppStatus", model, ecq, Boolean.TRUE);
-                            } catch (Throwable ignore) {
-                            }
+                            announceOnline(dmeCls, extCls, model, e.getKey(), e.getValue());
                         }
                     } catch (Throwable ignore) {
                     }
@@ -265,6 +247,48 @@ public class BypassBond {
         }
 
         Log.i("BypassBond: server hooks active for " + BoundApps.bindings(null), null);
+    }
+
+    // syncPhoneAppStatus' info-struct class (ecq on 3.52, ckq on 3.55, ...). Resolved at runtime.
+    private static volatile Class<?> sInfoCls;
+
+    private static Class<?> infoClass(Class<?> dmeCls) {
+        Class<?> c = sInfoCls;
+        if (c != null) return c;
+        for (Method m : dmeCls.getDeclaredMethods()) {
+            if (m.getName().equals("syncPhoneAppStatus")) {
+                Class<?>[] p = m.getParameterTypes();
+                if (p.length >= 2) { sInfoCls = p[1]; return p[1]; }
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Tell the band a phone app is online (opens the watch-side interconnect channel).
+     * The info-struct class and its field names are obfuscated and version-specific, so we
+     * resolve the class from syncPhoneAppStatus' parameter type and fill fields by type
+     * (String = package, byte[] = signature fingerprint).
+     */
+    private static void announceOnline(Class<?> dmeCls, Class<?> extCls, Object model, String watchPkg, String fpPkg) {
+        try {
+            Class<?> ic = infoClass(dmeCls);
+            if (ic == null) return;
+            byte[] fp;
+            try { fp = (byte[]) XposedHelpers.callStaticMethod(extCls, "getFingerPrintByPackage", fpPkg); }
+            catch (Throwable t) { fp = new byte[0]; }
+            Object info = ic.newInstance();
+            boolean setS = false, setB = false;
+            for (java.lang.reflect.Field f : ic.getDeclaredFields()) {
+                if (java.lang.reflect.Modifier.isStatic(f.getModifiers())) continue;
+                f.setAccessible(true);
+                Class<?> t = f.getType();
+                if (t == String.class && !setS) { f.set(info, watchPkg); setS = true; }
+                else if (t == byte[].class && !setB) { f.set(info, fp); setB = true; }
+            }
+            XposedHelpers.callStaticMethod(dmeCls, "syncPhoneAppStatus", model, info, Boolean.TRUE);
+        } catch (Throwable ignore) {
+        }
     }
 
     /** Connected device model from WearableDeviceManager (when getCurrentDeviceModel is null). */
