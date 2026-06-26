@@ -1,4 +1,4 @@
-package test.hook.debug.xp;
+package com.batareya16.miWearBridge.xp;
 
 import com.github.kyuubiran.ezxhelper.Log;
 
@@ -15,7 +15,7 @@ import de.robv.android.xposed.XC_MethodHook;
 import de.robv.android.xposed.XC_MethodReplacement;
 import de.robv.android.xposed.XposedBridge;
 import de.robv.android.xposed.XposedHelpers;
-import test.hook.debug.xp.utils.DexKit;
+import com.batareya16.miWearBridge.xp.utils.DexKit;
 
 /**
  * Makes Mi Fitness treat our apps as genuinely installed, paired watch apps
@@ -30,6 +30,17 @@ public class BypassBond {
 
     /** Outgoing addressing header: the coordinator sends "@w:<watchPackage>\n<payload>". */
     static final String ADDR_PREFIX = "@w:";
+
+    // Obfuscated binder method names.
+    // Centralized so a future-version remap is a one-line change. The unique-signature ones
+    // (perm-check, status-wrap, current-model) also self-heal via a signature fallback.
+    static final String M_PERM_CHECK   = "x3"; // (Permission,String)->boolean : permission check
+    static final String M_INSTALLED_1  = "d3"; // (String)->boolean : install check
+    static final String M_INSTALLED_2  = "u3"; // (String)->boolean : install check
+    static final String M_STATUS_WRAP  = "f3"; // (int)->Status : code -> Status
+    static final String M_CUR_MODEL    = "w2"; // ()->WearableDeviceModel : current device
+    static final String M_ADD_LISTENER = "y5"; // (String,listener)->void : addListener
+    static final String M_PKG_KEY      = "P2"; // (String)->String : package key (inbound routing)
 
     public static void apply(ClassLoader cl) {
         DexKitBridge bridge = DexKit.INSTANCE.getDexKitBridge();
@@ -87,20 +98,26 @@ public class BypassBond {
 
     private static void installServerHooks(final Class<?> bc) {
         final ClassLoader mcl = bc.getClassLoader();
+        verifyBinder(bc);
 
-        // Permission/install checks -> true.
-        for (String mn : new String[]{"x3", "d3", "u3"}) {
-            try {
-                XposedBridge.hookAllMethods(bc, mn, XC_MethodReplacement.returnConstant(Boolean.TRUE));
-            } catch (Throwable ignore) {
-            }
+        // Permission check x3(Permission,String)->boolean -> true. Unique signature -> sig fallback.
+        try {
+            Class<?> permCls = mcl.loadClass("com.xiaomi.xms.wearable.auth.Permission");
+            hookNameOrSig(bc, M_PERM_CHECK, "boolean", new Class<?>[]{permCls, String.class},
+                    XC_MethodReplacement.returnConstant(Boolean.TRUE));
+        } catch (Throwable ignore) {
         }
+        // Install checks d3/u3 (String)->boolean -> true. Non-unique signature -> by name.
+        if (hookNamed(bc, M_INSTALLED_1, XC_MethodReplacement.returnConstant(Boolean.TRUE)) == 0)
+            Log.e("BypassBond: install-check '" + M_INSTALLED_1 + "' not found — remap may be needed", null);
+        hookNamed(bc, M_INSTALLED_2, XC_MethodReplacement.returnConstant(Boolean.TRUE));
 
-        // f3(int) -> Status: always SUCCESS (so early checks in y5/S5 don't bail out).
+        // f3(int) -> Status: always SUCCESS. Unique signature -> sig fallback.
         try {
             Class<?> st = mcl.loadClass("com.xiaomi.xms.wearable.Status");
             Object SUCCESS = XposedHelpers.getStaticObjectField(st, "RESULT_SUCCESS");
-            XposedBridge.hookAllMethods(bc, "f3", XC_MethodReplacement.returnConstant(SUCCESS));
+            hookNameOrSig(bc, M_STATUS_WRAP, "com.xiaomi.xms.wearable.Status", new Class<?>[]{int.class},
+                    XC_MethodReplacement.returnConstant(SUCCESS));
         } catch (Throwable ignore) {
         }
 
@@ -157,7 +174,9 @@ public class BypassBond {
             final Class<?> dmeCls = mcl.loadClass("com.xiaomi.xms.wearable.extensions.DeviceModelExtKt");
             final Class<?> extCls = mcl.loadClass("com.xiaomi.xms.wearable.extensions.ExtensionsKt");
 
-            XposedBridge.hookAllMethods(bc, "w2", new XC_MethodHook() {
+            hookNameOrSig(bc, M_CUR_MODEL,
+                    "com.xiaomi.fitness.device.manager.export.WearableDeviceModel", new Class<?>[]{},
+                    new XC_MethodHook() {
                 @Override
                 protected void afterHookedMethod(MethodHookParam p) {
                     try {
@@ -176,11 +195,11 @@ public class BypassBond {
             } catch (Throwable ignore) {
             }
 
-            XposedBridge.hookAllMethods(bc, "y5", new XC_MethodHook() {
+            hookNamed(bc, M_ADD_LISTENER, new XC_MethodHook() {
                 @Override
                 protected void afterHookedMethod(MethodHookParam p) {
                     try {
-                        Object model = XposedHelpers.callMethod(p.thisObject, "w2");
+                        Object model = XposedHelpers.callMethod(p.thisObject, M_CUR_MODEL);
                         if (model == null) model = connectedModel(mcl);
                         if (model == null) return;
                         // fallback: announce the calling app itself (watch package == phone package)
@@ -204,7 +223,7 @@ public class BypassBond {
         // Inbound (watch -> phone): deliver the watch app's messages to the
         // listener of its coordinator. P2(watchPkg) -> coordinatorPkg, so delivery matches.
         try {
-            XposedBridge.hookAllMethods(bc, "P2", new XC_MethodHook() {
+            hookNamed(bc, M_PKG_KEY, new XC_MethodHook() {
                 @Override
                 protected void afterHookedMethod(MethodHookParam p) {
                     try {
@@ -247,6 +266,53 @@ public class BypassBond {
         }
 
         Log.i("BypassBond: server hooks active for " + BoundApps.bindings(null), null);
+    }
+
+    /** Hook every method named {@code name} on the binder. Returns how many were hooked. */
+    private static int hookNamed(Class<?> bc, String name, XC_MethodHook cb) {
+        int n = 0;
+        for (Method m : bc.getDeclaredMethods()) {
+            if (m.getName().equals(name)) {
+                try { XposedBridge.hookMethod(m, cb); n++; } catch (Throwable ignore) { }
+            }
+        }
+        return n;
+    }
+
+    /**
+     * Hook by obfuscated name; if the name isn't found (renamed in a newer Mi Fitness),
+     * fall back to matching the method's signature (return type + parameter types).
+     * Only use for methods whose signature is unique on the binder.
+     */
+    private static void hookNameOrSig(Class<?> bc, String name, String retTypeName,
+                                      Class<?>[] params, XC_MethodHook cb) {
+        if (hookNamed(bc, name, cb) > 0) return;
+        int s = 0;
+        for (Method m : bc.getDeclaredMethods()) {
+            if (!m.getReturnType().getName().equals(retTypeName)) continue;
+            Class<?>[] p = m.getParameterTypes();
+            if (p.length != params.length) continue;
+            boolean ok = true;
+            for (int i = 0; i < p.length; i++) if (p[i] != params[i]) { ok = false; break; }
+            if (!ok) continue;
+            try { XposedBridge.hookMethod(m, cb); s++; Log.i("BypassBond: '" + name + "' resolved by signature -> " + m.getName(), null); }
+            catch (Throwable ignore) { }
+        }
+        if (s == 0) Log.e("BypassBond: '" + name + "' not found by name or signature — remap needed", null);
+    }
+
+    /** Warn about any expected binder method missing on this Mi Fitness version. */
+    private static void verifyBinder(Class<?> bc) {
+        java.util.Set<String> names = new java.util.HashSet<>();
+        for (Method m : bc.getDeclaredMethods()) names.add(m.getName());
+        for (String n : new String[]{M_PERM_CHECK, M_INSTALLED_1, M_INSTALLED_2,
+                M_STATUS_WRAP, M_CUR_MODEL, M_ADD_LISTENER, M_PKG_KEY}) {
+            if (!names.contains(n)) {
+                Log.e("BypassBond: expected binder method '" + n + "' MISSING on "
+                        + bc.getName() + " — remap needed for this Mi Fitness version", null);
+            }
+        }
+        Log.i("BypassBond: binder = " + bc.getName(), null);
     }
 
     // syncPhoneAppStatus' info-struct class (ecq on 3.52, ckq on 3.55, ...). Resolved at runtime.

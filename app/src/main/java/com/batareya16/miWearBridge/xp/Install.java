@@ -1,4 +1,4 @@
-package test.hook.debug.xp;
+package com.batareya16.miWearBridge.xp;
 
 import android.app.AlertDialog;
 import android.content.Context;
@@ -19,7 +19,7 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 
 import de.robv.android.xposed.XposedHelpers;
-import test.hook.debug.xp.utils.Save;
+import com.batareya16.miWearBridge.xp.utils.Save;
 
 public class Install {
     /**

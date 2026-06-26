@@ -1,4 +1,4 @@
-package test.hook.debug.xp.utils;
+package com.batareya16.miWearBridge.xp.utils;
 
 /**
  * @author user

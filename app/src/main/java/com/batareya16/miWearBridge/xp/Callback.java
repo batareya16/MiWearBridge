@@ -1,4 +1,4 @@
-package test.hook.debug.xp;
+package com.batareya16.miWearBridge.xp;
 
 import org.jetbrains.annotations.Nullable;
 

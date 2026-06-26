@@ -1,4 +1,4 @@
-package test.hook.debug.xp;
+package com.batareya16.miWearBridge.xp;
 
 import com.github.kyuubiran.ezxhelper.HookFactory;
 import com.github.kyuubiran.ezxhelper.Log;
@@ -16,7 +16,7 @@ import java.lang.reflect.Field;
 
 import de.robv.android.xposed.XC_MethodReplacement;
 import de.robv.android.xposed.XposedHelpers;
-import test.hook.debug.xp.utils.DexKit;
+import com.batareya16.miWearBridge.xp.utils.DexKit;
 
 /**
  * Disable the connection-protection dialog and red-dot hints introduced in 3.46.0i

@@ -1,9 +1,9 @@
-package test.hook.debug.xp;
+package com.batareya16.miWearBridge.xp;
 
 import com.github.kyuubiran.ezxhelper.EzXHelper;
 
 import de.robv.android.xposed.callbacks.XC_InitPackageResources;
-import test.hook.debug.R;
+import com.batareya16.miWearBridge.R;
 
 /**
  * Strings are read directly from the module resources via getModuleRes(), WITHOUT injecting

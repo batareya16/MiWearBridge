@@ -1,4 +1,4 @@
-package test.hook.debug.xp.ui;
+package com.batareya16.miWearBridge.xp.ui;
 
 import android.graphics.Color;
 import android.view.View;

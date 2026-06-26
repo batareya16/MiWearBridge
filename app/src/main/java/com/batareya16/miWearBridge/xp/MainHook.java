@@ -1,4 +1,4 @@
-package test.hook.debug.xp;
+package com.batareya16.miWearBridge.xp;
 
 import android.annotation.SuppressLint;
 import android.app.Activity;
@@ -33,10 +33,10 @@ import de.robv.android.xposed.XC_MethodReplacement;
 import de.robv.android.xposed.XposedHelpers;
 import de.robv.android.xposed.callbacks.XC_InitPackageResources;
 import de.robv.android.xposed.callbacks.XC_LoadPackage;
-import test.hook.debug.xp.ui.DialogView;
-import test.hook.debug.xp.utils.DexKit;
-import test.hook.debug.xp.utils.Save;
-import test.hook.debug.xp.utils.SignUtils;
+import com.batareya16.miWearBridge.xp.ui.DialogView;
+import com.batareya16.miWearBridge.xp.utils.DexKit;
+import com.batareya16.miWearBridge.xp.utils.Save;
+import com.batareya16.miWearBridge.xp.utils.SignUtils;
 
 public class MainHook implements IXposedHookLoadPackage, IXposedHookInitPackageResources, IXposedHookZygoteInit {
     public MainHook() {
@@ -490,7 +490,7 @@ public class MainHook implements IXposedHookLoadPackage, IXposedHookInitPackageR
         // Any other package in the module scope is a third-party companion app:
         // suppress the client-side "not bond" in xms-wearable-lib and redirect the bind to Mi Fitness.
         if (!isMiFitness) {
-            if ("test.hook.debug".equals(packageName)) return; // the module itself
+            if ("com.batareya16.miWearBridge".equals(packageName)) return; // the module itself
             EzXHelper.initHandleLoadPackage(loadPackageParam);
             EzXHelper.setLogTag("WearableDebug");
             try { BypassBondClient.apply(loadPackageParam.classLoader); } catch (Throwable t) { Log.e(t, "BypassBondClient"); }

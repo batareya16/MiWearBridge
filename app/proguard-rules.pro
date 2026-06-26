@@ -21,10 +21,10 @@
 #-renamesourcefileattribute SourceFile
 
 # LSPosed entry point — referenced by name from assets/xposed_init.
--keep class test.hook.debug.xp.MainHook { *; }
+-keep class com.batareya16.miWearBridge.xp.MainHook { *; }
 
 # Hook classes use reflection / DexKit; keep the whole module package intact.
--keep class test.hook.debug.xp.** { *; }
+-keep class com.batareya16.miWearBridge.xp.** { *; }
 
 # Xposed API must not be stripped/renamed.
 -keep class de.robv.android.xposed.** { *; }

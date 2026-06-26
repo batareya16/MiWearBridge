@@ -1,4 +1,4 @@
-package test.hook.debug.xp;
+package com.batareya16.miWearBridge.xp;
 
 import com.github.kyuubiran.ezxhelper.ClassUtils;
 import com.github.kyuubiran.ezxhelper.EzXHelper;
@@ -16,7 +16,7 @@ import org.luckypray.dexkit.result.MethodDataList;
 
 import java.lang.reflect.Method;
 
-import test.hook.debug.xp.utils.DexKit;
+import com.batareya16.miWearBridge.xp.utils.DexKit;
 
 public class EntryPoint {
     public static Method findEntryPoint() {

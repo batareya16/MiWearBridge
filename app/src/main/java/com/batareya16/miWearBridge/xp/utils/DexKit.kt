@@ -1,4 +1,4 @@
-package test.hook.debug.xp.utils
+package com.batareya16.miWearBridge.xp.utils
 
 import de.robv.android.xposed.callbacks.XC_LoadPackage.LoadPackageParam
 import org.luckypray.dexkit.DexKitBridge
