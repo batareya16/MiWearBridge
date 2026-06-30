@@ -54,7 +54,7 @@ Coordinator routing:
 ## Requirements
 
 - Rooted device with **LSPosed** (Xposed API 82+).
-- **Mi Fitness** (`com.xiaomi.wearable`); `com.mi.health` (Mi Health) is also hooked if present.
+- **Mi Fitness** (`com.xiaomi.wearable`);
 - Watch quick‑app(s) and the phone app **must share the same signing key** (interconnect requirement; the fingerprint used in checks comes from the coordinator app).
 - For background auto‑sync: set Mi Fitness to **no battery restriction**.
 
@@ -69,7 +69,7 @@ adb install -r app/build/outputs/apk/debug/app-debug.apk
 
 The module hooks **two sides**, so for the stock setup you must enable it on **both**:
 
-1. **Mi Fitness** (`com.xiaomi.wearable`, and `com.mi.health` if present) — the server side
+1. **Mi Fitness** (`com.xiaomi.wearable`) — the server side
    (forge records, online announce, routing).
 2. **Every companion app**.
 
