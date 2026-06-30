@@ -32,6 +32,10 @@ Added by MiWearBridge:
 - **Bind apps to watch** — manage `watch app → coordinator app` bindings. Tap **+ Add binding**, pick the phone coordinator from the installed‑apps list, enter the watch app's package. Remove with ✕. If a watch package is **not** listed it falls back to itself (watch package == phone package — the default "matching name" behaviour), so simple single‑app setups need no entry.
 - **Auto‑sync to cloud** — toggle periodic sync of watch data to the cloud and set the interval (minutes).
 
+## Example projects
+[batareya16/MiBand8ProHassControlApps](https://github.com/batareya16/MiBand8ProHassControlApps)** Control Home Assistant from Xiaomi Mi Band 8 Pro
+
+
 ## How the bridge works
 
 Inside the Mi Fitness process:
