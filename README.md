@@ -61,7 +61,13 @@ Coordinator routing:
 adb install -r app/build/outputs/apk/debug/app-debug.apk
 ```
 
-Enable the module in LSPosed with scope on **Mi Fitness** (`com.xiaomi.wearable`, and `com.mi.health` if used) **and** each companion app you bind. Force‑stop Mi Fitness after enabling or after changing bindings.
+## Scope — what to enable (important)
+
+The module hooks **two sides**, so for the stock setup you must enable it on **both**:
+
+1. **Mi Fitness** (`com.xiaomi.wearable`, and `com.mi.health` if present) — the server side
+   (forge records, online announce, routing).
+2. **Every companion app**.
 
 ## Contract for your apps
 

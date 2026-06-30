@@ -11,7 +11,7 @@
             android:value="true" />
         <meta-data
             android:name="xposeddescription"
-            android:value="Open debug page" />
+            android:value="Third-party interconnect bridge for Mi Band / Vela: bindings, auto-sync, sideload." />
         <meta-data
             android:name="xposedminversion"
             android:value="82" />
